@@ -9,9 +9,11 @@
 
 #define CS   10
 #define DC   9
-#define RESET  8 
+#define RESET  8
 
 #define SD_CS 10
+
+#define touch_threshold 30
 
 // In the SD card, place 24 bit color BMP files (be sure they are 24-bit!)
 // There are examples in the sketch folder
@@ -32,7 +34,7 @@
 // between X+ and X- Use any multimeter to read it
 // For the one we're using, its 300 ohms across the X plate
 TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
-  int a = 1;
+int a = 1;
 
 
 
@@ -61,12 +63,12 @@ void setup(void) {
   digitalWrite(10, HIGH);
 
   tft.reset();
-  
+
   uint16_t identifier = tft.readID();
 
   Serial.print(F("LCD driver chip: "));
   Serial.println(identifier, HEX);
-    
+
 
   tft.begin(identifier);
 
@@ -74,15 +76,15 @@ void setup(void) {
   SD.begin(SD_CS);
   delay(500);
 
-    tft.setRotation(0);
-    tft.fillScreen(0);
-  
-    bmpDraw("screen.bmp", 0, 0);
-  
+  tft.setRotation(0);
+  tft.fillScreen(0);
+
+  bmpDraw("screen.bmp", 0, 0);
+
   tft.println();
 
   currentcolor = RED;
- 
+
   pinMode(13, OUTPUT);
 
 }
@@ -92,122 +94,82 @@ void setup(void) {
 
 void loop()
 {
+  int press_count = 0;
+  int b = 0;
+  int timeout = 0;
+  TSPoint p;
 
-  digitalWrite(13, HIGH);
-  // Recently Point was renamed TSPoint in the TouchScreen library
-  // If you are using an older version of the library, use the
-  // commented definition instead.
-  // Point p = ts.getPoint();
-  TSPoint p = ts.getPoint();
-  digitalWrite(13, LOW);
-
-  // if sharing pins, you'll need to fix the directions of the touchscreen pins
-  //pinMode(XP, OUTPUT);
-  pinMode(XM, OUTPUT);
-  pinMode(YP, OUTPUT);
-  //pinMode(YM, OUTPUT);
-
-  // we have some minimum pressure we consider 'valid'
-  // pressure of 0 means no pressing!
-switch (a)
-{
-  case 1:
-  if (p.z > MINPRESSURE && p.z < MAXPRESSURE) {
-    /*
-    Serial.print("X = "); Serial.print(p.x);
-    Serial.print("\tY = "); Serial.print(p.y);
-    Serial.print("\tPressure = "); Serial.println(p.z);
-    */
-    tft.setRotation(0);
-    tft.fillScreen(0);
-  
-    bmpDraw("screen2.bmp", 0, 0);
-   
-
-    digitalWrite(13, HIGH);
-  // Recently Point was renamed TSPoint in the TouchScreen library
-  // If you are using an older version of the library, use the
-  // commented definition instead.
-  // Point p = ts.getPoint();
-  TSPoint p = ts.getPoint();
-  digitalWrite(13, LOW);
-
-  // if sharing pins, you'll need to fix the directions of the touchscreen pins
-  //pinMode(XP, OUTPUT);
-  pinMode(XM, OUTPUT);
-  pinMode(YP, OUTPUT);
-  //pinMode(YM, OUTPUT);
-
-  // we have some minimum pressure we consider 'valid'
-  // pressure of 0 means no pressing!
-  a = 2;
-  }
-  break;
-  case 2:
-if (p.z > MINPRESSURE && p.z < MAXPRESSURE) {
-
-    tft.setRotation(0);
-    tft.fillScreen(0);
-  
-    bmpDraw("screen.bmp", 0, 0);
-
-a = 1;
-  }
-  break;
-}
-/*    if (p.y < (TS_MINY-5)) {
-      Serial.println("erase");
-      // press the bottom of the screen to erase 
-      tft.fillRect(0, BOXSIZE, tft.width(), tft.height()-BOXSIZE, BLACK);
+  while (press_count < touch_threshold)
+  {
+    if (timeout > 5*touch_threshold)     // break the while loop if not pressed 20 times in 100 times
+    {
+      break;
     }
-    // scale from 0->1023 to tft.width
-//    p.x = tft.width()-(map(p.x, TS_MINX, TS_MAXX, tft.width(), 0));
-//    p.y = tft.height()-(map(p.y, TS_MINY, TS_MAXY, tft.height(), 0));
-    p.x = map(p.x, TS_MINX, TS_MAXX, tft.width(), 0);
-    p.y = tft.height()-(map(p.y, TS_MINY, TS_MAXY, tft.height(), 0));
-    /*
-    Serial.print("("); Serial.print(p.x);
-    Serial.print(", "); Serial.print(p.y);
-    Serial.println(")");
     
-    if (p.y < BOXSIZE) {
-       oldcolor = currentcolor;
+    digitalWrite(13, HIGH);
+    p = ts.getPoint();
+    digitalWrite(13, LOW);
 
-       if (p.x < BOXSIZE) { 
-         currentcolor = RED; 
-         tft.drawRect(0, 0, BOXSIZE, BOXSIZE, WHITE);
-       } else if (p.x < BOXSIZE*2) {
-         currentcolor = YELLOW;
-         tft.drawRect(BOXSIZE, 0, BOXSIZE, BOXSIZE, WHITE);
-       } else if (p.x < BOXSIZE*3) {
-         currentcolor = GREEN;
-         tft.drawRect(BOXSIZE*2, 0, BOXSIZE, BOXSIZE, WHITE);
-       } else if (p.x < BOXSIZE*4) {
-         currentcolor = CYAN;
-         tft.drawRect(BOXSIZE*3, 0, BOXSIZE, BOXSIZE, WHITE);
-       } else if (p.x < BOXSIZE*5) {
-         currentcolor = BLUE;
-         tft.drawRect(BOXSIZE*4, 0, BOXSIZE, BOXSIZE, WHITE);
-       } else if (p.x < BOXSIZE*6) {
-         currentcolor = MAGENTA;
-         tft.drawRect(BOXSIZE*5, 0, BOXSIZE, BOXSIZE, WHITE);
-       }
+    // if sharing pins, you'll need to fix the directions of the touchscreen pins
 
-       if (oldcolor != currentcolor) {
-          if (oldcolor == RED) tft.fillRect(0, 0, BOXSIZE, BOXSIZE, RED);
-          if (oldcolor == YELLOW) tft.fillRect(BOXSIZE, 0, BOXSIZE, BOXSIZE, YELLOW);
-          if (oldcolor == GREEN) tft.fillRect(BOXSIZE*2, 0, BOXSIZE, BOXSIZE, GREEN);
-          if (oldcolor == CYAN) tft.fillRect(BOXSIZE*3, 0, BOXSIZE, BOXSIZE, CYAN);
-          if (oldcolor == BLUE) tft.fillRect(BOXSIZE*4, 0, BOXSIZE, BOXSIZE, BLUE);
-          if (oldcolor == MAGENTA) tft.fillRect(BOXSIZE*5, 0, BOXSIZE, BOXSIZE, MAGENTA);
-       }
+    pinMode(XM, OUTPUT);
+    pinMode(YP, OUTPUT);
+
+    //    Serial.println(p.z);
+
+    if (p.z > MINPRESSURE && p.z < MAXPRESSURE) {
+      press_count++;
+      delay(50);
     }
-    if (((p.y-PENRADIUS) > BOXSIZE) && ((p.y+PENRADIUS) < tft.height())) {
-      tft.fillCircle(p.x, p.y, PENRADIUS, currentcolor);
-    }
-  */
-  
 
+    timeout++;
+
+    Serial.println(press_count);
+  }
+
+  if (press_count == touch_threshold)
+  {
+    b = a;
+  }
+
+  switch (b)
+  {
+    case 1:
+      if (p.z > MINPRESSURE && p.z < MAXPRESSURE) {
+
+        tft.setRotation(0);
+        tft.fillScreen(0);
+
+        bmpDraw("screen2.bmp", 0, 0);
+
+        a = 2;
+      }
+      break;
+    case 2:
+      if (p.z > MINPRESSURE && p.z < MAXPRESSURE) {
+
+        tft.setRotation(0);
+        tft.fillScreen(0);
+
+        bmpDraw("screen3.bmp", 0, 0);
+
+        a = 3;
+      }
+      break;
+    case 3:
+      if (p.z > MINPRESSURE && p.z < MAXPRESSURE) {
+
+        tft.setRotation(0);
+        tft.fillScreen(0);
+
+        bmpDraw("screen.bmp", 0, 0);
+
+        a = 1;
+      }
+      break;
+    default:
+      break;
+  }
 }
 
 unsigned long testFilledTriangles() {
@@ -217,13 +179,13 @@ unsigned long testFilledTriangles() {
 
   tft.fillScreen(BLACK);
   start = micros();
-  for(i=min(cx,cy); i>10; i-=5) {
+  for (i = min(cx, cy); i > 10; i -= 5) {
     start = micros();
     tft.fillTriangle(cx, cy - i, cx - i, cy + i, cx + i, cy + i,
-      tft.color565(0, i, i));
+                     tft.color565(0, i, i));
     t += micros() - start;
     tft.drawTriangle(cx, cy - i, cx - i, cy + i, cx + i, cy + i,
-      tft.color565(i, i, 0));
+                     tft.color565(i, i, 0));
   }
 
   return t;
