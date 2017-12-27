@@ -1,72 +1,132 @@
+/*
+  Software serial multple serial test
+
+ Receives from the hardware serial, sends to software serial.
+ Receives from software serial, sends to hardware serial.
+
+ The circuit:
+ * RX is digital pin 10 (connect to TX of other device)
+ * TX is digital pin 11 (connect to RX of other device)
+
+ Note:
+ Not all pins on the Mega and Mega 2560 support change interrupts,
+ so only the following can be used for RX:
+ 10, 11, 12, 13, 50, 51, 52, 53, 62, 63, 64, 65, 66, 67, 68, 69
+
+ Not all pins on the Leonardo support change interrupts,
+ so only the following can be used for RX:
+ 8, 9, 10, 11, 14 (MISO), 15 (SCK), 16 (MOSI).
+
+ created back in the mists of time
+ modified 25 May 2012
+ by Tom Igoe
+ based on Mikal Hart's example
+
+ This example code is in the public domain.
+
+ */
+#include <SoftwareSerial.h>
 #include <SPI.h>
-
-
-
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <SWTFT.h> // Hardware-specific library
+#include <TouchScreen.h>
 #include <SD.h>
-
 #define CS   10
 #define DC   9
 #define RESET  8
-
 #define SD_CS 10
-
+#define touch_threshold 25
 // In the SD card, place 24 bit color BMP files (be sure they are 24-bit!)
 // There are examples in the sketch folder
-
-
+#define YP A1  // must be an analog pin, use "An" notation!
+#define XM A2  // must be an analog pin, use "An" notation!
+#define YM 7   // can be a digital pin
+#define XP 6   // can be a digital pin
+#define TS_MINX 150
+#define TS_MINY 120
+#define TS_MAXX 920
+#define TS_MAXY 940
+// For better pressure precision, we need to know the resistance
+// between X+ and X- Use any multimeter to read it
+// For the one we're using, its 300 ohms across the X plate
+TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
+int a = 1;
+// Assign human-readable names to some common 16-bit color values:
+#define  BLACK   0x0000
+#define BLUE    0x001F
+#define RED     0xF800
+#define GREEN   0x07E0
+#define CYAN    0x07FF
+#define MAGENTA 0xF81F
+#define YELLOW  0xFFE0
+#define WHITE   0xFFFF
 SWTFT tft;
+#define BOXSIZE 40
+#define PENRADIUS 3
+
+SoftwareSerial mySerial(0, 1); // RX, TX
+int oldcolor, currentcolor;
 
 void setup()
 {
-  Serial.begin(9600);
+  // Open serial communications and wait for port to open:
+  mySerial.begin(9600);
+  while (!mySerial) {
+    ; // wait for serial port to connect. Needed for Leonardo only
+  }
+  mySerial.println("Hello, world?");
+  pinMode(10, OUTPUT);    // For SD card interface
+  digitalWrite(10, HIGH);   // For SD card interface
 
-  pinMode(10, OUTPUT);
-  digitalWrite(10, HIGH);
-
-  tft.reset();
-
-  uint16_t identifier = tft.readID();
-
-
-  Serial.print(F("Found LCD driver chip ID: "));
+  tft.reset();    // Reset tft LCD
+  uint16_t identifier = tft.readID(); // Read ID of the TFT module
+  Serial.print(F("LCD driver chip: ")); // Check if this gets printed on serial monitor of Arduino
   Serial.println(identifier, HEX);
 
-  tft.begin(identifier);
+  tft.begin(identifier);    // Initializing tft LCD
 
-  Serial.print(F("Initializing SD card..."));
-
+  Serial.print(F("Initializing SD card...")); // Initializing SD card
   if (!SD.begin(SD_CS)) {
     Serial.println(F("failed!"));
     return;
   }
-  Serial.println(F("OK!"));
+  Serial.println(F("OK!"));   // Check for this while debugging
 
-  tft.setRotation(0);
-  tft.fillScreen(0);
-
-  //      bmpDraw("woof.bmp", 0, 0);
-  bmpDraw("screen.bmp", 0, 0);
-
-  //  bmpDraw("gear.bmp", 0, 0);
-  //  delay(10000);
+  tft.setRotation(0);   // Change this if display is coming rotated
+  tft.fillScreen(0);    // Change this if you don’t want to clear the previous display
+  bmpDraw("HMP.bmp", 0, 0);  // Drawing the default bmp from SD card
+  tft.println();    // Print on the LCD
+  currentcolor = RED;
+  pinMode(13, OUTPUT);    // For enabling read from touchscreen
 }
 
-void loop()
+#define MINPRESSURE 5   // Reduce this if you want softer touch. Softer touch may cause more unintentional change of display
+#define MAXPRESSURE 1000
+
+void loop() // run over and over
 {
-  //  int i = 0; int j= 0;
-  //  for (int i = 0; i < 4; i++) {
-
-  //    tft.setRotation(i);
-  //    tft.fillScreen(0);
-  //    for (int j = 0; j <= 200; j += 50) {
-  //      bmpDraw("woof.bmp", j, j);
-  //    }
-  //    delay(1000);
-  //  }
+  if (mySerial.available())
+    mySerial.write(mySerial.read());
 }
 
+unsigned long testFilledTriangles() {
+  unsigned long start, t = 0;
+  int           i, cx = tft.width()  / 2 - 1,
+                   cy = tft.height() / 2 - 1;
+
+  tft.fillScreen(BLACK);
+  start = micros();
+  for (i = min(cx, cy); i > 10; i -= 5) {
+    start = micros();
+    tft.fillTriangle(cx, cy - i, cx - i, cy + i, cx + i, cy + i,
+                     tft.color565(0, i, i));
+    t += micros() - start;
+    tft.drawTriangle(cx, cy - i, cx - i, cy + i, cx + i, cy + i,
+                     tft.color565(i, i, 0));
+  }
+
+  return t;
+}
 // This function opens a Windows Bitmap (BMP) file and
 // displays it at the given coordinates.  It's sped up
 // by reading many pixels worth of data at a time
@@ -217,3 +277,4 @@ uint32_t read32(File f) {
   ((uint8_t *)&result)[3] = f.read(); // MSB
   return result;
 }
+

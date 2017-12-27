@@ -1,97 +1,71 @@
 #include <SPI.h>
-
-
-
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <SWTFT.h> // Hardware-specific library
 #include <TouchScreen.h>
 #include <SD.h>
-
 #define CS   10
 #define DC   9
 #define RESET  8
-
 #define SD_CS 10
-
-#define touch_threshold 30
-
+#define touch_threshold 25
 // In the SD card, place 24 bit color BMP files (be sure they are 24-bit!)
 // There are examples in the sketch folder
-
-
-
 #define YP A1  // must be an analog pin, use "An" notation!
 #define XM A2  // must be an analog pin, use "An" notation!
 #define YM 7   // can be a digital pin
 #define XP 6   // can be a digital pin
-
 #define TS_MINX 150
 #define TS_MINY 120
 #define TS_MAXX 920
 #define TS_MAXY 940
-
 // For better pressure precision, we need to know the resistance
 // between X+ and X- Use any multimeter to read it
 // For the one we're using, its 300 ohms across the X plate
 TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
 int a = 1;
-
-
-
 // Assign human-readable names to some common 16-bit color values:
-#define	BLACK   0x0000
-#define	BLUE    0x001F
-#define	RED     0xF800
-#define	GREEN   0x07E0
+#define  BLACK   0x0000
+#define BLUE    0x001F
+#define RED     0xF800
+#define GREEN   0x07E0
 #define CYAN    0x07FF
 #define MAGENTA 0xF81F
 #define YELLOW  0xFFE0
 #define WHITE   0xFFFF
-
-
 SWTFT tft;
-
 #define BOXSIZE 40
 #define PENRADIUS 3
 int oldcolor, currentcolor;
-
 void setup(void) {
-  Serial.begin(9600);
-  Serial.println(F("Paint!"));
+  Serial.begin(9600); // baud rate
+  Serial.println(F("Paint!"));  // Will be printed on serial monitor
+  pinMode(10, OUTPUT);    // For SD card interface
+  digitalWrite(10, HIGH);   // For SD card interface
 
-  pinMode(10, OUTPUT);
-  digitalWrite(10, HIGH);
-
-  tft.reset();
-
-  uint16_t identifier = tft.readID();
-
-  Serial.print(F("LCD driver chip: "));
+  tft.reset();    // Reset tft LCD
+  uint16_t identifier = tft.readID(); // Read ID of the TFT module
+  Serial.print(F("LCD driver chip: ")); // Check if this gets printed on serial monitor of Arduino
   Serial.println(identifier, HEX);
 
+  tft.begin(identifier);    // Initializing tft LCD
 
-  tft.begin(identifier);
+  Serial.print(F("Initializing SD card...")); // Initializing SD card
+  if (!SD.begin(SD_CS)) {
+    Serial.println(F("failed!"));
+    return;
+  }
+  Serial.println(F("OK!"));   // Check for this while debugging
 
-  Serial.print(F("Initializing SD card..."));
-  SD.begin(SD_CS);
-  delay(500);
-
-  tft.setRotation(0);
-  tft.fillScreen(0);
-
-  bmpDraw("screen.bmp", 0, 0);
-
-  tft.println();
-
+  tft.setRotation(0);   // Change this if display is coming rotated
+  tft.fillScreen(0);    // Change this if you don’t want to clear the previous display
+  bmpDraw("screen.bmp", 0, 0);  // Drawing the default bmp from SD card
+  tft.println();    // Print on the LCD
   currentcolor = RED;
-
-  pinMode(13, OUTPUT);
-
+  pinMode(13, OUTPUT);    // For enabling read from touchscreen
 }
 
-#define MINPRESSURE 5
+#define MINPRESSURE 5   // Reduce this if you want softer touch. Softer touch may cause more unintentional change of display
 #define MAXPRESSURE 1000
-
 void loop()
 {
   int press_count = 0;
@@ -99,50 +73,43 @@ void loop()
   int timeout = 0;
   TSPoint p;
 
-  while (press_count < touch_threshold)
+
+while (press_count < touch_threshold) // Increase touch_threshold value in define section to increase the long press time to change 
+// from one display to other
   {
-    if (timeout > 5*touch_threshold)     // break the while loop if not pressed 20 times in 100 times
+    if (timeout > 5 * touch_threshold)   // break the while loop if not pressed 20 times in 100 times
     {
       break;
     }
-    
     digitalWrite(13, HIGH);
-    p = ts.getPoint();
+    p = ts.getPoint();    // input from touchscreen
     digitalWrite(13, LOW);
-
     // if sharing pins, you'll need to fix the directions of the touchscreen pins
-
     pinMode(XM, OUTPUT);
     pinMode(YP, OUTPUT);
-
     //    Serial.println(p.z);
-
     if (p.z > MINPRESSURE && p.z < MAXPRESSURE) {
       press_count++;
       delay(50);
     }
-
     timeout++;
-
     Serial.println(press_count);
   }
 
   if (press_count == touch_threshold)
   {
-    b = a;
+    b = a;    // This will cause switching to the next case
   }
 
   switch (b)
   {
     case 1:
       if (p.z > MINPRESSURE && p.z < MAXPRESSURE) {
-
         tft.setRotation(0);
         tft.fillScreen(0);
 
         bmpDraw("screen2.bmp", 0, 0);
-
-        a = 2;
+        a = 2;    // Switch to case 2 if long press happens in this case statement
       }
       break;
     case 2:
@@ -150,9 +117,7 @@ void loop()
 
         tft.setRotation(0);
         tft.fillScreen(0);
-
         bmpDraw("screen3.bmp", 0, 0);
-
         a = 3;
       }
       break;
@@ -164,7 +129,7 @@ void loop()
 
         bmpDraw("screen.bmp", 0, 0);
 
-        a = 1;
+        a = 1;    // Go back to case 1
       }
       break;
     default:
@@ -340,3 +305,4 @@ uint32_t read32(File f) {
   ((uint8_t *)&result)[3] = f.read(); // MSB
   return result;
 }
+
