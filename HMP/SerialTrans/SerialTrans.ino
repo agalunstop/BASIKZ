@@ -75,28 +75,13 @@ void setup()
   }
 //  mySerial.println("Hello, world?");
 
-  /*  pinMode(10, OUTPUT);    // For SD card interface
-    digitalWrite(10, HIGH);   // For SD card interface
+  tft.reset();    // Reset tft LCD
+  uint16_t identifier = tft.readID(); // Read ID of the TFT module
+//  Serial.print(F("LCD driver chip: ")); // Check if this gets printed on serial monitor of Arduino
+//  Serial.println(identifier, HEX);
 
-    tft.reset();    // Reset tft LCD
-    uint16_t identifier = tft.readID(); // Read ID of the TFT module
-    Serial.print(F("LCD driver chip: ")); // Check if this gets printed on serial monitor of Arduino
-    Serial.println(identifier, HEX);
+  tft.begin(identifier);    // Initializing tft LCD
 
-    tft.begin(identifier);    // Initializing tft LCD
-
-    Serial.print(F("Initializing SD card...")); // Initializing SD card
-    if (!SD.begin(SD_CS)) {
-      Serial.println(F("failed!"));
-      return;
-    }
-    Serial.println(F("OK!"));   // Check for this while debugging
-
-    tft.setRotation(0);   // Change this if display is coming rotated
-    tft.fillScreen(0);    // Change this if you don’t want to clear the previous display
-    bmpDraw("HMP.bmp", 0, 0);  // Drawing the default bmp from SD card
-    tft.println();    // Print on the LCD
-  */
   tft.setRotation(1);   // Change this if display is coming rotated
   tft.fillScreen(BLACK);
   tft.setCursor(30, 190);  //Side, Top
