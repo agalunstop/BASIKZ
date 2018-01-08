@@ -84,14 +84,14 @@ void setup()
 
   tft.setRotation(1);   // Change this if display is coming rotated
   tft.fillScreen(BLACK);
-  tft.setCursor(30, 190);  //Side, Top
-  tft.setTextColor(CYAN); tft.setTextSize(2.5); tft.println("CSIR-CSIO");
-  tft.setCursor(190, 170);  //Side, Top
-  tft.setTextColor(YELLOW); tft.setTextSize(2); tft.println("Health");
-  tft.setCursor(190, 190);  //Side, Top
-  tft.setTextColor(YELLOW); tft.setTextSize(2); tft.println("Monitoring");
-  tft.setCursor(190, 210);  //Side, Top
-  tft.setTextColor(YELLOW); tft.setTextSize(2); tft.println("Panel");
+  tft.setCursor(25, 170);  //Side, Top
+  tft.setTextColor(YELLOW); tft.setTextSize(2); tft.println("Health Monitoring Panel");
+  tft.setCursor(210, 220);  //Side, Top
+  tft.setTextColor(CYAN); tft.setTextSize(2); tft.println("CSIR-CSIO");
+//  tft.setCursor(190, 190);  //Side, Top
+//  tft.setTextColor(YELLOW); tft.setTextSize(2); tft.println("Monitoring");
+//  tft.setCursor(190, 210);  //Side, Top
+//  tft.setTextColor(YELLOW); tft.setTextSize(2); tft.println("Panel");
 
   tft.drawRect(0, 0, 320, 150, GREEN);
   tft.setCursor(10, 65);  //Side, Top
