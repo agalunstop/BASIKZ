@@ -158,8 +158,9 @@ void SD_Init(void)
 
 void LCD_ShowBMP(void) 
 {
-  unsigned char i;
-  for (i = 0; i < BMP_NUM; i++) {
+  unsigned char i=0;
+//  for (i = 0; i < BMP_NUM; i++) {				//Changes made by sonal on 26th October 2018
+	while(){
     bmpFile = SD.open(BMP_File[i]);
     if (! bmpFile) {
       DEBUG(BMP_File[i]);
@@ -182,6 +183,10 @@ void LCD_ShowBMP(void)
     
     delay(1000);
     delay(1000);
+    delay(1000);
+    delay(1000);
+	
+	if(i==2){ i = 0;}		//reset value of i when last image is reached
   }
 }
 
